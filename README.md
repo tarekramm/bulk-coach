@@ -8,7 +8,7 @@ A personalized workout, nutrition and progress tracker. Works offline and stores
 - **Important:** until Cloudflare D1 is configured, all user data stays in the same iPhone browser profile. Export backups regularly.
 
 ## Cloudflare deployment
-1. In Cloudflare Dashboard > Workers & Pages > Create > Pages > Connect to Git, choose **tarekramm/bulk-coach**, production branch **main**. Select no framework, build command empty, output directory **/** (repository root). If Pages' Git UI disallows root output, set a build command that copies static files to `public/` and use `public` as output, copying `functions/` alongside as required for Pages Functions.
+1. In Cloudflare Dashboard > Workers & Pages > Create > Pages > Connect to Git, choose **tarekramm/bulk-coach**, production branch **main**. Select no framework, build command **`npm run build`**, build output directory **`dist`**, and root directory **/**. Pages Functions are in `functions/` at the repository root.
 2. In D1, create database `bulk-coach`, and run `schema.sql` against it.
 3. Bind D1 to Pages > Settings > Bindings as variable **DB**.
 4. **Before using D1, protect both `bulk.tarekramadan.com` and the project's `*.pages.dev` preview/production host via Cloudflare Access policies**. The API requires the trusted `Cf-Access-Authenticated-User-Email` header, which only provides authorization when traffic is gated by Access. Never expose /api/state to public writes. Ensure Pages preview and any alternate hosts cannot bypass Access.

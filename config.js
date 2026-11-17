@@ -1,2 +1,2 @@
-// Public browser configuration only. Never put Supabase service-role or OneSignal REST API secrets here.
-window.BULK_CONFIG = { supabaseUrl: "", supabaseAnonKey: "", oneSignalAppId: "" };
+// Cloudflare-only deployment. No Supabase credentials or third-party database.
+window.BULK_CONFIG = { storageApi: "/api/state", pushAppId: "" };

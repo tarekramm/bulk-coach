@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Bulk Coach//Daily Training Reminder//EN
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+UID:bulk-coach-daily-1430-v1@bulk.tarekramadan.com
+DTSTAMP:20261116T170000Z
+DTSTART;TZID=America/Toronto:20261117T143000
+DTEND;TZID=America/Toronto:20261117T143500
+RRULE:FREQ=DAILY
+SUMMARY:Bulk Coach - Check today's workout
+DESCRIPTION:Open Bulk Coach to follow today's workout and nutrition plan.
+BEGIN:VALARM
+TRIGGER:-PT0M
+ACTION:DISPLAY
+DESCRIPTION:Time to check Bulk Coach
+END:VALARM
+END:VEVENT
+END:VCALENDAR

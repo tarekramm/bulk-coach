@@ -5,7 +5,7 @@ const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const number=(x,f=0)=>Number.isFinite(Number(x))?Number(x):f;
 const fmt=x=>Math.round(x).toLocaleString();
 const defaultData=()=>({
-  version:1,updatedAt:Date.now(),startDate:today(),goal:79,calories:3300,protein:160,
+  version:2,updatedAt:Date.now(),startDate:today(),goal:79,calories:3300,protein:160,
   workouts:[
     ["Upper A","Monday"],["Lower A","Tuesday"],["Upper B","Thursday"],["Lower B","Friday"]
   ],
@@ -19,12 +19,13 @@ const defaultData=()=>({
     ["Egg, large",72,6,0.5,5,"1 egg"],["Cooked chicken breast",165,31,0,3.6,"100 g"],["Cooked white rice",130,2.7,28,0.3,"100 g"],["Oats dry",389,17,66,7,"100 g"],["Whole milk",62,3.2,4.8,3.3,"100 ml"],["Banana",105,1.3,27,0.4,"1 medium"],["Plain Greek yogurt",100,17,6,0,"170 g"],["Olive oil",120,0,0,14,"1 tbsp"],["Lean beef cooked",210,28,0,10,"100 g"],["Potatoes cooked",87,1.9,20,0.1,"100 g"],["Whole wheat bread",95,4,17,1.2,"1 slice"],["Peanut butter",95,3.5,3.5,8,"1 tbsp"]
   ].map(([name,kcal,p,c,f,portion])=>({id:uid(),name,kcal,p,c,f,portion})),
   reminders:[
-    ["Breakfast","08:00","every"],["Lunch","12:00","every"],["Gym","14:30","training"],["Dinner","18:30","every"],["Daily review","21:30","every"]
+    ["Daily Bulk Coach reminder","14:30","every"]
   ].map(([name,time,days])=>({id:uid(),name,time,days,enabled:true})),
   entries:[],meals:[],weights:[],measurements:[],fields:[],fieldLogs:[],checks:{}
 });
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||defaultData()}catch{state=defaultData()}
 for(const [k,v] of Object.entries(defaultData()))if(state[k]===undefined)state[k]=v;
+if(Number(state.version)<2){state.reminders=[{id:uid(),name:"Daily Bulk Coach reminder",time:"14:30",days:"every",enabled:true}];state.version=2;state.updatedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(state));}
 let tab="today",activeWorkout=state.workouts[0]?.[0]||"Upper A",editing=null,syncState="Local backup active",pushState="Not enabled",writeTimer,remoteReady=false;
 const store=()=>{state.updatedAt=Date.now();localStorage.setItem(KEY,JSON.stringify(state));render();scheduleSync()};
 const getDailyMeals=(d=today())=>state.meals.filter(m=>m.date===d);
@@ -50,11 +51,15 @@ function todayView(){
  '<div class="card"><h2>Daily checklist</h2>'+[["workout","Workout completed"],["nutrition","Hit calorie & protein targets"],["weigh","Weigh-in logged"],["sleep","Sleep and recovery checked"]].map(([id,name])=>'<label class="row"><span>'+name+'</span><input type="checkbox" data-check="'+id+'" '+(check(id)?"checked":"")+'></label>').join("")+'<p class="muted">'+done+' of 4 completed</p>'+bar(done,4)+'</div><div class="card"><small>DAILY MOTIVATION</small><p class="quote">“'+qs[daysIn%qs.length]+'”</p></div>';
 }
 function gymView(){
- const select='<select data-workout-select>'+state.workouts.map(w=>'<option '+(activeWorkout===w[0]?"selected":"")+' value="'+esc(w[0])+'">'+esc(w[0])+' · '+esc(w[1])+'</option>').join("")+'</select>';
- const rows=state.exercises.filter(e=>e.day===activeWorkout);
- return '<div class="card"><div class="flex space"><h2>Workout day</h2>'+select+'</div><p class="hint">Log each working set after you finish it. Increase weight when all sets reach the top of the rep range with controlled form.</p></div>'+
- '<div class="card">'+rows.map(e=>{const prev=lastSets(e),w=prev[0]?.kg||"",reps=prev[0]?.reps||"";return '<div class="exercise"><div class="flex space"><b>'+esc(e.name)+'</b><button class="link" data-edit="exercise" data-id="'+e.id+'">Edit</button></div><small>'+e.sets+' sets · '+e.lo+'–'+e.hi+' reps · '+esc(e.step)+' kg steps</small><p class="green tiny">'+esc(recommend(e))+'</p><form data-form="log-set" data-id="'+e.id+'"><div class="fields"><div><label>Weight (kg)</label><input name="kg" inputmode="decimal" type="number" min="0" max="1000" step="0.5" value="'+esc(w)+'" required></div><div><label>Reps</label><input name="reps" inputmode="numeric" type="number" min="1" max="100" step="1" value="'+esc(reps)+'" required></div></div><div class="flex space" style="margin-top:9px"><button class="btn secondary" type="submit">Log set</button><small>Today: '+state.entries.filter(x=>x.exerciseId===e.id&&x.date===today()).reduce((a,x)=>a+x.sets.length,0)+' set(s)</small></div></form><button class="link" data-history="'+e.id+'">View history</button></div>'}).join("")+'<button class="btn" data-add="exercise">+ Add exercise</button></div>'+
- '<div class="card"><h2>Edit workout days</h2>'+state.workouts.map((w,i)=>'<div class="row"><span>'+esc(w[0])+' <small>'+esc(w[1])+'</small></span><button class="link" data-edit="workout" data-id="'+i+'">Edit</button></div>').join("")+'</div>';
+ const i=Math.max(0,state.workouts.findIndex(w=>w[0]===activeWorkout));
+ const w=state.workouts[i]||["Upper A","Monday"];
+ const list=state.exercises.filter(e=>e.day===w[0]);
+ const days='<div class="day-switcher">'+state.workouts.map((d,j)=>'<button class="day-button '+(activeWorkout===d[0]?"selected":"")+'" data-select-day="'+esc(d[0])+'"><b>Day '+(j+1)+'</b><small>'+esc(d[0])+'</small></button>').join("")+'</div>';
+ const header='<div class="card"><div class="flex space"><h2>Day '+(i+1)+' — '+esc(w[0])+'</h2><span class="pill">'+esc(w[1])+'</span></div><p class="hint">Do these exercises in order. No need to type any weights, sets or reps.</p><button class="btn" data-finish-workout>'+(check("workout")?"✓ Completed today":"Mark workout completed")+'</button></div>';
+ const exercises='<div class="card"><h2>Today’s exercise instructions</h2>'+list.map((e,j)=>'<div class="exercise"><div class="flex space"><div><small>EXERCISE '+(j+1)+'</small><h3>'+esc(e.name)+'</h3></div><button class="link" data-edit="exercise" data-id="'+e.id+'">Edit</button></div><p class="big-target">'+e.sets+' sets × '+e.lo+'–'+e.hi+' reps</p><p class="hint">Use the same working weight for all '+e.sets+' sets. Leave 1–2 reps in reserve. When you can perform all sets at '+e.hi+' reps with good form, add about '+esc(e.step)+' kg <b>at the next workout</b>, if this is a suitable increment for the exercise.</p></div>').join("")+'<button class="btn secondary" data-add="exercise">+ Add an exercise</button></div>';
+ const tip='<div class="card"><h2>Should I add 2.5 kg every set?</h2><p><b>No.</b> Warm up with lighter sets, then choose one challenging but controlled weight for the working sets. Stay at that weight for all working sets. Add weight at a future session only when all sets reach the top of the rep range with 1–2 reps left in reserve.</p><p class="hint">Rest about 2–3 minutes between compound lifts, 60–120 seconds for isolation exercises. If you fall below the minimum reps, reduce the load rather than forcing bad form.</p></div>';
+ const schedule='<div class="card"><h2>Weekly schedule</h2>'+state.workouts.map((d,j)=>'<div class="row"><span>Day '+(j+1)+' · '+esc(d[0])+' <small>'+esc(d[1])+'</small></span><button class="link" data-edit="workout" data-id="'+j+'">Edit</button></div>').join("")+'</div>';
+ return days+header+exercises+tip+schedule;
 }
 function foodView(){
  const n=nutrient();
@@ -117,6 +122,8 @@ app.addEventListener("change",async e=>{
 app.addEventListener("click",e=>{
  const button=e.target.closest("button");if(!button)return;
  if(button.dataset.tab){tab=button.dataset.tab;render()}
+ if(button.dataset.selectDay){activeWorkout=button.dataset.selectDay;render()}
+ if(button.hasAttribute("data-finish-workout")){state.checks[today()]||={};state.checks[today()].workout=!check("workout");store()}
  if(button.dataset.add)showEditor(button.dataset.add);
  if(button.dataset.edit)showEditor(button.dataset.edit,button.dataset.id);
  if(button.hasAttribute("data-cancel")){document.querySelector("#editor")?.remove();editing=null}

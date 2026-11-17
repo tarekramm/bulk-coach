@@ -33,7 +33,7 @@ const workoutFor=()=>{const day=new Date().toLocaleDateString("en-US",{weekday:"
 const latestWeight=()=>[...state.weights].sort((a,b)=>b.date.localeCompare(a.date))[0]?.value||75;
 const daysIn=Math.max(1,Math.min(90,Math.floor((new Date(today()+"T12:00:00")-new Date(state.startDate+"T12:00:00"))/86400000)+1));
 const check=(name)=>Boolean(state.checks[today()]?.[name]);
-const lastSets=e=>[...state.entries].filter(x=>x.exerciseId===e.id).sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created)[0]?.sets||[];
+const lastSets=e=>{const all=state.entries.filter(x=>x.exerciseId===e.id).sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);if(!all.length)return [];const recent=all[0].date;return all.filter(x=>x.date===recent).reverse().flatMap(x=>x.sets)};
 const recommend=e=>{const s=lastSets(e);if(!s.length)return "Start with a comfortable weight, keeping 1–2 reps in reserve";const max=Math.max(...s.map(x=>number(x.kg)));const done=s.length>=e.sets&&s.slice(0,e.sets).every(x=>number(x.reps)>=e.hi&&number(x.kg)===max);return done?"Try "+(max+number(e.step,2.5))+" kg next time (if form stays controlled)":"Repeat about "+max+" kg; build toward "+e.hi+" reps on every set"};
 const bar=(n,total)=>'<div class="bar"><div style="width:'+Math.min(100,Math.max(0,n/Math.max(1,total)*100))+'%"></div></div>';
 const app=document.querySelector("#app");

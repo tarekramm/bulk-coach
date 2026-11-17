@@ -1,0 +1,18 @@
+{
+  "name": "90-Day Bulk Coach",
+  "short_name": "Bulk Coach",
+  "description": "Personal 90-day training and nutrition coach",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#10151d",
+  "theme_color": "#10151d",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
